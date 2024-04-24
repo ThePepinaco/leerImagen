@@ -1,0 +1,62 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "E:\\ReposVS\\leerImagen\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|E:\\ReposVS\\leerImagen\\leerImagen\\kernel.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|solutionrelative:leerImagen\\kernel.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|E:\\REPOSVS\\LEERIMAGEN\\LEERIMAGEN\\STB_IMAGE.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|solutionrelative:LEERIMAGEN\\STB_IMAGE.H||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "stb_image.h",
+              "DocumentMoniker": "E:\\ReposVS\\leerImagen\\leerImagen\\stb_image.h",
+              "RelativeDocumentMoniker": "leerImagen\\stb_image.h",
+              "ToolTip": "E:\\ReposVS\\leerImagen\\leerImagen\\stb_image.h",
+              "RelativeToolTip": "leerImagen\\stb_image.h",
+              "ViewState": "AQIAABsbAAAAAAAAAAArwC8bAAANAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2024-04-24T20:27:55.121Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "kernel.cu",
+              "DocumentMoniker": "E:\\ReposVS\\leerImagen\\leerImagen\\kernel.cu",
+              "RelativeDocumentMoniker": "leerImagen\\kernel.cu",
+              "ToolTip": "E:\\ReposVS\\leerImagen\\leerImagen\\kernel.cu",
+              "RelativeToolTip": "leerImagen\\kernel.cu",
+              "ViewState": "AQIAAF8AAAAAAAAAAAAUwFwAAABMAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2024-04-22T15:26:14.088Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

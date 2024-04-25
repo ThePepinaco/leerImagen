@@ -1,9 +1,9 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "E:\\ReposVS\\leerImagen\\FiltroBlurGauss\\",
+  "WorkspaceRootPath": "E:\\ReposVS\\leerImagen\\FiltroMedianBlur\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|E:\\ReposVS\\leerImagen\\FiltroBlurGauss\\leerImagen\\kernel.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "AbsoluteMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|E:\\ReposVS\\leerImagen\\FiltroMedianBlur\\leerImagen\\kernel.cu||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{C0DDA7B3-D174-4150-AA92-D6AEC50D3CB0}|leerImagen\\leerImagen.vcxproj|solutionrelative:leerImagen\\kernel.cu||{8B382828-6202-11D1-8870-0000F87579D2}"
     }
   ],
@@ -28,11 +28,11 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "kernel.cu",
-              "DocumentMoniker": "E:\\ReposVS\\leerImagen\\FiltroBlurGauss\\leerImagen\\kernel.cu",
+              "DocumentMoniker": "E:\\ReposVS\\leerImagen\\FiltroMedianBlur\\leerImagen\\kernel.cu",
               "RelativeDocumentMoniker": "leerImagen\\kernel.cu",
-              "ToolTip": "E:\\ReposVS\\leerImagen\\FiltroBlurGauss\\leerImagen\\kernel.cu",
+              "ToolTip": "E:\\ReposVS\\leerImagen\\FiltroMedianBlur\\leerImagen\\kernel.cu",
               "RelativeToolTip": "leerImagen\\kernel.cu",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAcAAAAcAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-04-25T19:27:57.314Z",
               "EditorCaption": ""

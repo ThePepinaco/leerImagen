@@ -2,7 +2,7 @@
 <Project>
   <ProjectOutputs>
     <ProjectOutput>
-      <FullPath>E:\ReposVS\leerImagen\FiltroBlurGauss\x64\Debug\leerImagen.exe</FullPath>
+      <FullPath>E:\ReposVS\leerImagen\FiltroMedianBlur\x64\Debug\leerImagen.exe</FullPath>
     </ProjectOutput>
   </ProjectOutputs>
   <ContentFiles />

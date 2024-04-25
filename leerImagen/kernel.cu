@@ -11,11 +11,11 @@
 
 
 
-#define FILTER_SIZE 3
-#define FILTER_RADIUS 10
+#define FILTER_SIZE 21
+#define FILTER_RADIUS (FILTER_SIZE / 2)
+#define SIGMA 100.0f
 // Tamaño y sigma del kernel
-int kernelSize = 3;
-float sigma = 10.0f;
+
 
 std::vector<std::vector<float>> createGaussianBlurKernel(int size, float sigma) {
     std::vector<std::vector<float>> kernel(size, std::vector<float>(size, 0.0f));
@@ -39,22 +39,27 @@ std::vector<std::vector<float>> createGaussianBlurKernel(int size, float sigma) 
     return kernel;
 }
 
-void applyGaussianBlurFilter(const unsigned char* image, unsigned char* blur_image, int width, int height, int channels, const std::vector<std::vector<float>>& kernel, int kernelSize) {
-    int kernelHalf = kernelSize / 2;
-
+void gaussianBlurCPU(const unsigned char* inputImage, unsigned char* outputImage, int width, int height, const std::vector<std::vector<float>>& kernel) {
+    
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             float sum = 0.0f;
-            for (int ky = -kernelHalf; ky <= kernelHalf; ++ky) {
-                for (int kx = -kernelHalf; kx <= kernelHalf; ++kx) {
-                    int pixelX = x + kx;
-                    int pixelY = y + ky;
-                    if (pixelX >= 0 && pixelX < width && pixelY >= 0 && pixelY < height) {
-                        sum += static_cast<float>(image[pixelY * width + pixelX]) * kernel[ky + kernelHalf][kx + kernelHalf];
+            float value = 0.0f;
+
+            for (int i = -FILTER_RADIUS; i <= FILTER_RADIUS; ++i) {
+                for (int j = -FILTER_RADIUS; j <= FILTER_RADIUS; ++j) {
+                    int offsetX = x + j;
+                    int offsetY = y + i;
+
+                    if (offsetX >= 0 && offsetX < width && offsetY >= 0 && offsetY < height) {
+                        float weight = kernel[i + FILTER_RADIUS][j + FILTER_RADIUS];
+                        value += weight * inputImage[offsetY * width + offsetX];
+                        sum += weight;
                     }
                 }
             }
-            blur_image[y * width + x] = static_cast<unsigned char>(sum);
+
+            outputImage[y * width + x] = static_cast<unsigned char>(value / sum);
         }
     }
 }
@@ -88,30 +93,32 @@ __global__ void gaussianBlurKernelCUDA(const unsigned char* inputImage, unsigned
 
 int main() {
     int width, height, channels;
-    unsigned char* image = stbi_load("1.jpg", &width, &height, &channels, 1);
-    
-    unsigned char* image2 = stbi_load("1.jpg", &width, &height, &channels, 0);
-    
+
+    unsigned char* image = stbi_load("1.jpg", &width, &height, &channels, 0);
+
     if (!image) {
         std::cerr << "No se pudo abrir la imagen." << std::endl;
         return 1;
     }
-    std::vector<std::vector<float>> gaussianBlurKernel = createGaussianBlurKernel(kernelSize, sigma);
+    std::vector<std::vector<float>> gaussianBlurKernel = createGaussianBlurKernel(FILTER_SIZE, SIGMA);
     unsigned char* grayscaleImage = new unsigned char[width * height];
- 
+
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             // Calculate grayscale value
             int index = (y * width + x) * channels;
-            int r = image2[index];
-            int g = image2[index + 1];
-            int b = image2[index + 2];
+            int r = image[index];
+            int g = image[index + 1];
+            int b = image[index + 2];
             grayscaleImage[y * width + x] = (unsigned char)((r + g + b) / 3);
         }
     }
-    
-    
+
     size_t imageSize = width * height * sizeof(unsigned char);
+
+
+
+
 
 
 
@@ -119,18 +126,14 @@ int main() {
     cudaMalloc(&d_inputImage, imageSize);
     cudaMalloc(&d_outputImage, imageSize);
 
-
     cudaMemcpy(d_inputImage, grayscaleImage, imageSize, cudaMemcpyHostToDevice);
-   
+
     dim3 blockDim(16, 16);
     dim3 gridDim((width + blockDim.x - 1) / blockDim.x, (height + blockDim.y - 1) / blockDim.y);
 
-    
-    
     auto start = std::chrono::high_resolution_clock::now();
 
-    gaussianBlurKernelCUDA<<<gridDim, blockDim >>> (d_inputImage, d_outputImage, width, height);
-
+    gaussianBlurKernelCUDA << <gridDim, blockDim >> > (d_inputImage, d_outputImage, width, height);
 
     cudaDeviceSynchronize();
 
@@ -139,36 +142,40 @@ int main() {
 
     std::cout << "Tiempo de ejecución: " << duration.count() << "ms  GPU --- FILTRO GAUSSIANO" << std::endl;
 
-
     unsigned char* blurredImage = new unsigned char[width * height];
     cudaMemcpy(blurredImage, d_outputImage, imageSize, cudaMemcpyDeviceToHost);
 
-
-   
     stbi_write_png("blurred_image.png", width, height, 1, blurredImage, width);
-   
+    
 
-    //Aplicar el filtro de desenfoque gaussiano a la imagen
-    unsigned char* blur_image = new unsigned char[width * height];
+
+
+
+
+
+    unsigned char* blurredImage1 = new unsigned char[width * height];
 
     auto start1 = std::chrono::high_resolution_clock::now();
-    applyGaussianBlurFilter(image, blur_image, width, height, channels, gaussianBlurKernel, kernelSize);
-    auto finish1 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish1 - start1;
-    std::cout << "Tiempo de ejecución: " << elapsed.count() << " segundos" << std::endl;
+
+    // Aplicar el filtro de desenfoque gaussiano en la CPU
+    gaussianBlurCPU(grayscaleImage, blurredImage1, width, height, gaussianBlurKernel);
+
+    auto end1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration1 = end1 - start1;
+
+    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO GAUSSIANO" << std::endl;
+
+    // Guardar la imagen desenfocada
+    stbi_write_png("blurred_image_cpu.png", width, height, 1, blurredImage1, width);
 
 
 
-    // Guardar la imagen con el filtro de desenfoque gaussiano aplicado
-    stbi_write_jpg("blur_gauss.jpg", width, height, 1, blur_image, width);
-    std::cout << "Imagen blur guardada correctamente" << std::endl;
 
-    // Liberar la memoria
-    delete[] blur_image;
-    stbi_image_free(image);
-    //delete[] grayscaleImage;
-    //delete[] blurredImage;
-    //cudaFree(d_inputImage);
-    //cudaFree(d_outputImage);
+
+
+    delete[] grayscaleImage;
+    delete[] blurredImage;
+    cudaFree(d_inputImage);
+    cudaFree(d_outputImage);
     return 0;
 }

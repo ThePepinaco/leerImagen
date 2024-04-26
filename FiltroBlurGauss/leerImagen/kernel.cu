@@ -94,7 +94,7 @@ __global__ void gaussianBlurKernelCUDA(const unsigned char* inputImage, unsigned
 int main() {
     int width, height, channels;
 
-    unsigned char* image = stbi_load("1.jpg", &width, &height, &channels, 0);
+    unsigned char* image = stbi_load("images.jpg", &width, &height, &channels, 0);
 
     if (!image) {
         std::cerr << "No se pudo abrir la imagen." << std::endl;
@@ -140,12 +140,12 @@ int main() {
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration = end - start;
 
-    std::cout << "Tiempo de ejecución: " << duration.count() << "ms  GPU --- FILTRO GAUSSIANO" << std::endl;
+    std::cout << "Tiempo de ejecución: " << duration.count() << "ms  GPU --- FILTRO GAUSS BLUR" << std::endl;
 
     unsigned char* blurredImage = new unsigned char[width * height];
     cudaMemcpy(blurredImage, d_outputImage, imageSize, cudaMemcpyDeviceToHost);
 
-    stbi_write_png("blurred_image.png", width, height, 1, blurredImage, width);
+    stbi_write_png("FiltroGaussBlurGPU.jpg", width, height, 1, blurredImage, width);
     
 
 
@@ -163,12 +163,10 @@ int main() {
     auto end1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration1 = end1 - start1;
 
-    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO GAUSSIANO" << std::endl;
+    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO GAUSS BLUR" << std::endl;
 
     // Guardar la imagen desenfocada
-    stbi_write_png("blurred_image_cpu.png", width, height, 1, blurredImage1, width);
-
-
+    stbi_write_png("FiltroGaussBlurCPU.jpg", width, height, 1, blurredImage1, width);
 
 
 

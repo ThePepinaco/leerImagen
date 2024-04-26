@@ -9,85 +9,42 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+#define FILTER_SIZE 5
 
+using namespace std;
 
-#define FILTER_SIZE 21
-#define FILTER_RADIUS (FILTER_SIZE / 2)
-#define SIGMA 100.0f
-// Tamaño y sigma del kernel
+vector<vector<int>>  crearMascarasSobel(int tamano) {
+    int mitad = tamano / 2;
+    vector<vector<int>> mascaraX;
+    mascaraX.resize(tamano, vector<int>(tamano, 0));
 
-
-std::vector<std::vector<float>> createGaussianBlurKernel(int size, float sigma) {
-    std::vector<std::vector<float>> kernel(size, std::vector<float>(size, 0.0f));
-    float sum = 0.0f;
-    int half = size / 2;
-
-    for (int i = -half; i <= half; ++i) {
-        for (int j = -half; j <= half; ++j) {
-            float value = exp(-(i * i + j * j) / (2 * sigma * sigma));
-            kernel[i + half][j + half] = value;
-            sum += value;
+    for (int y = 0; y < tamano; y++) {
+        for (int x = 0; x < tamano; x++) {
+            mascaraX[y][x] = x - mitad;
         }
     }
-    // Normalizar el kernel
-    for (int i = 0; i < size; ++i) {
-        for (int j = 0; j < size; ++j) {
-            kernel[i][j] /= sum;
-        }
-    }
-
-    return kernel;
+    return mascaraX;
 }
 
-void gaussianBlurCPU(const unsigned char* inputImage, unsigned char* outputImage, int width, int height, const std::vector<std::vector<float>>& kernel) {
-    
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            float sum = 0.0f;
-            float value = 0.0f;
+void aplicarFiltro(const unsigned char* entrada, unsigned char* salida, int width, int height, const std::vector<std::vector<int>>& mascara) {
+    int radius = mascara.size() / 2;
 
-            for (int i = -FILTER_RADIUS; i <= FILTER_RADIUS; ++i) {
-                for (int j = -FILTER_RADIUS; j <= FILTER_RADIUS; ++j) {
-                    int offsetX = x + j;
-                    int offsetY = y + i;
+    for (int y = radius; y < height - radius; y++) {
+        for (int x = radius; x < width - radius; x++) {
+            int sum = 0;
 
-                    if (offsetX >= 0 && offsetX < width && offsetY >= 0 && offsetY < height) {
-                        float weight = kernel[i + FILTER_RADIUS][j + FILTER_RADIUS];
-                        value += weight * inputImage[offsetY * width + offsetX];
-                        sum += weight;
-                    }
+            for (int i = -radius; i <= radius; i++) {
+                for (int j = -radius; j <= radius; j++) {
+                    int pixelX = x + j;
+                    int pixelY = y + i;
+                    int index = (pixelY * width + pixelX);
+
+                    sum += entrada[index] * mascara[i + radius][j + radius];
                 }
             }
 
-            outputImage[y * width + x] = static_cast<unsigned char>(value / sum);
+            salida[y * width + x] = static_cast<unsigned char>(std::abs(sum)); // Se toma el valor absoluto del resultado
         }
-    }
-}
-
-__global__ void gaussianBlurKernelCUDA(const unsigned char* inputImage, unsigned char* outputImage, int width, int height) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (x < width && y < height) {
-        float sum = 0.0f;
-        float value = 0.0f;
-
-        // aplicar el filtro usando las posiciones x e y
-        for (int i = -FILTER_RADIUS; i <= FILTER_RADIUS; ++i) {
-            for (int j = -FILTER_RADIUS; j <= FILTER_RADIUS; ++j) {
-                int offsetX = x + j;
-                int offsetY = y + i;
-
-                // verificar si no estamos en los bordes
-                if (offsetX >= 0 && offsetX < width && offsetY >= 0 && offsetY < height) {
-                    float weight = expf(-(i * i + j * j) / (2.0f * FILTER_RADIUS * FILTER_RADIUS));
-                    sum += weight;
-                    value += weight * inputImage[offsetY * width + offsetX];
-                }
-            }
-        }
-
-        outputImage[y * width + x] = static_cast<unsigned char>(value / sum);
     }
 }
 
@@ -100,7 +57,6 @@ int main() {
         std::cerr << "No se pudo abrir la imagen." << std::endl;
         return 1;
     }
-    std::vector<std::vector<float>> gaussianBlurKernel = createGaussianBlurKernel(FILTER_SIZE, SIGMA);
     unsigned char* grayscaleImage = new unsigned char[width * height];
 
     for (int y = 0; y < height; y++) {
@@ -113,69 +69,25 @@ int main() {
             grayscaleImage[y * width + x] = (unsigned char)((r + g + b) / 3);
         }
     }
+    vector<vector<int>> mascaraX = crearMascarasSobel(FILTER_SIZE);
 
-    size_t imageSize = width * height * sizeof(unsigned char);
-
-
-
-
-
-
-
-    unsigned char* d_inputImage, * d_outputImage;
-    cudaMalloc(&d_inputImage, imageSize);
-    cudaMalloc(&d_outputImage, imageSize);
-
-    cudaMemcpy(d_inputImage, grayscaleImage, imageSize, cudaMemcpyHostToDevice);
-
-    dim3 blockDim(16, 16);
-    dim3 gridDim((width + blockDim.x - 1) / blockDim.x, (height + blockDim.y - 1) / blockDim.y);
-
-    auto start = std::chrono::high_resolution_clock::now();
-
-    gaussianBlurKernelCUDA << <gridDim, blockDim >> > (d_inputImage, d_outputImage, width, height);
-
-    cudaDeviceSynchronize();
-
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> duration = end - start;
-
-    std::cout << "Tiempo de ejecución: " << duration.count() << "ms  GPU --- FILTRO GAUSSIANO" << std::endl;
-
-    unsigned char* blurredImage = new unsigned char[width * height];
-    cudaMemcpy(blurredImage, d_outputImage, imageSize, cudaMemcpyDeviceToHost);
-
-    stbi_write_png("blurred_image.png", width, height, 1, blurredImage, width);
-    
-
-
-
-
-
-
-    unsigned char* blurredImage1 = new unsigned char[width * height];
-
+    // Crear el kernel de Sobel
+    unsigned char* outputImageCPU = new unsigned char[width * height];
+    // Aplicar el filtro de Sobel en la dirección X
     auto start1 = std::chrono::high_resolution_clock::now();
 
-    // Aplicar el filtro de desenfoque gaussiano en la CPU
-    gaussianBlurCPU(grayscaleImage, blurredImage1, width, height, gaussianBlurKernel);
+    aplicarFiltro(grayscaleImage, outputImageCPU, width, height, mascaraX);
 
     auto end1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration1 = end1 - start1;
+    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO SOBEL CUSTOM" << std::endl;
+    // Guardar la imagen de salida
+    stbi_write_png("FiltroSobelCustomCPU.jpg", width, height, 1, outputImageCPU, width);
 
-    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO GAUSSIANO" << std::endl;
-
-    // Guardar la imagen desenfocada
-    stbi_write_png("blurred_image_cpu.png", width, height, 1, blurredImage1, width);
-
-
-
-
-
-
+    // Liberar memoria
+    stbi_image_free(image);
     delete[] grayscaleImage;
-    delete[] blurredImage;
-    cudaFree(d_inputImage);
-    cudaFree(d_outputImage);
+    delete[] outputImageCPU;
+
     return 0;
 }

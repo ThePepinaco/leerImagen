@@ -62,15 +62,15 @@ int main() {
     unsigned char* filteredImage = new unsigned char[width * height];
 
     // Aplicar filtro de mediana
-    auto start = std::chrono::steady_clock::now();
+    auto start1 = std::chrono::high_resolution_clock::now();
     applyMedianFilter(grayscaleImage, filteredImage, width, height);
-    auto end = std::chrono::steady_clock::now();
-
-    std::chrono::duration<double> elapsedSeconds = end - start;
-    std::cout << "Tiempo de procesamiento en la CPU: " << elapsedSeconds.count() << " segundos." << std::endl;
+    auto end1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration1 = end1 - start1;
+    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO MEDIAN BLUR" << std::endl;
+    
 
     // Guardar la imagen filtrada
-    stbi_write_png("medianBlurCPU.jpg", width, height, 1, filteredImage, width);
+    stbi_write_png("FiltroMedianBlurCPU.jpg", width, height, 1, filteredImage, width);
 
     // Liberar memoria
     stbi_image_free(image);

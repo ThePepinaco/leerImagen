@@ -9,7 +9,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
-#define FILTER_SIZE 5
+#define FILTER_SIZE 9
 
 using namespace std;
 
@@ -48,6 +48,29 @@ void aplicarFiltro(const unsigned char* entrada, unsigned char* salida, int widt
     }
 }
 
+__constant__ int d_M[FILTER_SIZE][FILTER_SIZE];
+
+__global__ void sobelFilter(const unsigned char* input, unsigned char* output, int width, int height) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        int sum = 0;
+        int radius = FILTER_SIZE / 2;
+
+        for (int i = -radius; i <= radius; i++) {
+            for (int j = -radius; j <= radius; j++) {
+                int pixelX = x + j;
+                int pixelY = y + i;
+                int index = pixelY * width + pixelX;
+
+                sum += input[index] * d_M[i + radius][j + radius];
+            }
+        }
+        output[y * width + x] = abs(sum); // Se toma el valor absoluto del resultado
+    }
+}
+
 int main() {
     int width, height, channels;
 
@@ -69,23 +92,65 @@ int main() {
             grayscaleImage[y * width + x] = (unsigned char)((r + g + b) / 3);
         }
     }
+
     vector<vector<int>> mascaraX = crearMascarasSobel(FILTER_SIZE);
 
-    // Crear el kernel de Sobel
+
+    vector<int> mascaraGPUX;
+    for (int i = 0; i < FILTER_SIZE; ++i) {
+        for (int j = 0; j < FILTER_SIZE; ++j) {
+            mascaraGPUX.push_back(mascaraX[i][j]);
+        }
+    }
+
+    cudaMemcpyToSymbol(d_M, &mascaraGPUX[0], FILTER_SIZE * FILTER_SIZE * sizeof(int));
+
+
+    unsigned char* d_input, * d_output;
+    cudaMalloc(&d_input, width * height * sizeof(unsigned char));
+    cudaMalloc(&d_output, width * height * sizeof(unsigned char));
+
+    cudaMemcpy(d_input, grayscaleImage, width * height * sizeof(unsigned char), cudaMemcpyHostToDevice);
+
+    dim3 threads(16, 16);
+    dim3 numBlocks((width + threads.x - 1) / threads.x, (height + threads.y - 1) / threads.y);
+
+
+    int mascara_GPU[FILTER_SIZE][FILTER_SIZE];
+    cudaMemcpyFromSymbol(mascara_GPU, d_M, FILTER_SIZE * FILTER_SIZE * sizeof(int));
+
+
+    auto startGPU = std::chrono::high_resolution_clock::now();
+    sobelFilter <<<numBlocks, threads >> > (d_input, d_output, width, height);
+    cudaDeviceSynchronize();
+    auto endGPU = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> durationGPU = endGPU - startGPU;
+    std::cout << "Tiempo de ejecución: " << durationGPU.count() << "ms  GPU --- FILTRO SOBEL X" << std::endl;
+
+    unsigned char* outputImageGPU = new unsigned char[width * height];
+    cudaMemcpy(outputImageGPU, d_output, width * height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+
+    stbi_write_png("FiltroSobelXGPU.jpg", width, height, 1, outputImageGPU, width);
+
+
+    // guardaremos la imagen
     unsigned char* outputImageCPU = new unsigned char[width * height];
-    // Aplicar el filtro de Sobel en la dirección X
+    // Aplicar el filtro 
     auto start1 = std::chrono::high_resolution_clock::now();
 
     aplicarFiltro(grayscaleImage, outputImageCPU, width, height, mascaraX);
 
     auto end1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> duration1 = end1 - start1;
-    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO SOBEL CUSTOM" << std::endl;
-    // Guardar la imagen de salida
-    stbi_write_png("FiltroSobelCustomCPU.jpg", width, height, 1, outputImageCPU, width);
+    std::cout << "Tiempo de ejecución: " << duration1.count() << "ms  CPU --- FILTRO SOBEL X" << std::endl;
 
-    // Liberar memoria
+    stbi_write_png("FiltroSobelXCPU.jpg", width, height, 1, outputImageCPU, width);
+
+
     stbi_image_free(image);
+    cudaFree(d_input);
+    cudaFree(d_output);
+
     delete[] grayscaleImage;
     delete[] outputImageCPU;
 

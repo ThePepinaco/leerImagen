@@ -94,7 +94,7 @@ __global__ void gaussianBlurKernelCUDA(const unsigned char* inputImage, unsigned
 int main() {
     int width, height, channels;
 
-    unsigned char* image = stbi_load("images.jpg", &width, &height, &channels, 0);
+    unsigned char* image = stbi_load("1.jpg", &width, &height, &channels, 0);
 
     if (!image) {
         std::cerr << "No se pudo abrir la imagen." << std::endl;
@@ -115,8 +115,6 @@ int main() {
     }
 
     size_t imageSize = width * height * sizeof(unsigned char);
-
-
 
 
 
